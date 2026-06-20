@@ -346,8 +346,24 @@ function analyzeText(rawText, keyword) {
       output += "Last Letter index in Keyword: " + sDeltaOutput + "\n";
    }
 
-   return output;
+   return addSums(output);
 }
 
-if (typeof module !== "undefined" && module.exports) module.exports = { analyzeText, splitText };
-if (typeof globalThis !== "undefined") { globalThis.analyzeText = analyzeText; globalThis.splitText = splitText; }
+// For any output line whose data (after the colon) is all integers,
+// append the sum in brackets and the digital root in parentheses.
+function addSums(output) {
+   return output.split('\n').map(line => {
+      const ci = line.indexOf(':');
+      if (ci === -1) return line;
+      const data = line.slice(ci + 1).trim();
+      if (!data) return line;
+      const parts = data.split(/\s+/).filter(s => s !== '');
+      if (parts.length <= 1 || !parts.every(p => /^\d+$/.test(p))) return line;
+      const sum = parts.reduce((a, b) => a + parseInt(b, 10), 0);
+      const dr = sum === 0 ? 0 : 1 + (sum - 1) % 9;
+      return line.trimEnd() + '  [' + sum + '] (' + dr + ')';
+   }).join('\n');
+}
+
+if (typeof module !== "undefined" && module.exports) module.exports = { analyzeText, splitText, addSums };
+if (typeof globalThis !== "undefined") { globalThis.analyzeText = analyzeText; globalThis.splitText = splitText; globalThis.addSums = addSums; }
