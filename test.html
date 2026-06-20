@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Text Analyzer — Test Runner</title>
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,600&family=Inter:wght@400;500;600&display=swap">
+   <link rel="stylesheet" href="../Shared/theme.css" />
+   <script src="textanalyzer-logic.js"></script>
+   <style>
+      body { padding: var(--nltm-sp-6) var(--nltm-sp-5); }
+      h1 {
+         font-family: var(--nltm-font-display);
+         font-style: italic;
+         color: var(--nltm-primary-deep);
+         margin: 0 0 var(--nltm-sp-2);
+      }
+      .summary { font-size: var(--nltm-fs-4); font-weight: 600; margin: var(--nltm-sp-2) 0 var(--nltm-sp-5); }
+      .summary.all-pass { color: var(--nltm-success); }
+      .summary.has-fail { color: #b00000; }
+      table {
+         border-collapse: collapse;
+         width: 100%;
+         background: var(--nltm-surface);
+         border: 1px solid var(--nltm-line);
+         border-radius: var(--nltm-radius);
+         overflow: hidden;
+         box-shadow: var(--nltm-shadow-1);
+      }
+      th {
+         background: var(--nltm-primary-soft);
+         color: var(--nltm-primary-deep);
+         padding: var(--nltm-sp-2) var(--nltm-sp-3);
+         text-align: left;
+         border-bottom: 1px solid var(--nltm-line);
+      }
+      td { padding: var(--nltm-sp-2) var(--nltm-sp-3); border-bottom: 1px solid var(--nltm-line); vertical-align: top; }
+      tr.pass td:nth-child(3) { color: var(--nltm-success); font-weight: 600; }
+      tr.fail { background: var(--nltm-accent-soft); }
+      tr.fail td:nth-child(3) { color: #b00000; font-weight: 600; }
+      .detail { color: var(--nltm-muted); font-size: var(--nltm-fs-2); font-family: var(--nltm-font-mono); }
+   </style>
+</head>
+<body class="nltm-page">
+
+   <h1>Text Analyzer — Test Runner</h1>
+   <div id="summary" class="summary"></div>
+   <table>
+      <thead>
+         <tr><th>#</th><th>Test</th><th>Result</th><th class="detail">Details</th></tr>
+      </thead>
+      <tbody id="results"></tbody>
+   </table>
+
+   <script>
+      const KW = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+      function run(name, fn) {
+         try { return Object.assign({ name }, fn()); }
+         catch (e) { return { name, passed: false, detail: "Exception: " + e.message }; }
+      }
+      // Pull a single labelled report row out of analyzeText's output.
+      function row(out, label) {
+         return out.split("\n").find(l => l.startsWith(label));
+      }
+
+      // Two-line fixture used across the analyzeText assertions.
+      const FIX = "Cat dog.\nApple bee.";
+      const OUT = analyzeText(FIX, KW);
+
+      const tests = [
+
+         ["splitText — sentence punctuation .?! → newlines", () => {
+            const out = splitText("Hello world.  How are you?  Fine!");
+            return { passed: out === "Hello world\nHow are you\nFine", detail: JSON.stringify(out) };
+         }],
+
+         ["splitText — leading/trailing spaces trimmed", () => {
+            const out = splitText("  leading and trailing.   ");
+            return { passed: out === "leading and trailing", detail: JSON.stringify(out) };
+         }],
+
+         ["analyzeText — line count", () => {
+            const out = row(OUT, "Number of lines:");
+            return { passed: out === "Number of lines: 2", detail: JSON.stringify(out) };
+         }],
+
+         ["analyzeText — first letters of each line", () => {
+            const out = row(OUT, "First letters of each line:");
+            return { passed: out === "First letters of each line: CA", detail: JSON.stringify(out) };
+         }],
+
+         ["analyzeText — last letters of each line", () => {
+            const out = row(OUT, "Last letters of each line:");
+            return { passed: out === "Last letters of each line: GE", detail: JSON.stringify(out) };
+         }],
+
+         ["analyzeText — words per line", () => {
+            const out = row(OUT, "Words per line:");
+            return { passed: out === "Words per line: 2 2 ", detail: JSON.stringify(out) };
+         }],
+
+         ["analyzeText — letter occurrence sweep (C)", () => {
+            const out = row(OUT, "Occurrences of 'C':");
+            return { passed: out === "Occurrences of 'C': 1 0 ", detail: JSON.stringify(out) };
+         }],
+
+         ["analyzeText — keyword section: first letter index in keyword", () => {
+            const out = row(OUT, "First Letter index in Keyword:");
+            return { passed: out === "First Letter index in Keyword: 3 1 ", detail: JSON.stringify(out) };
+         }],
+
+         ["analyzeText — keyword is uppercased to match text (fix #1)", () => {
+            const out = analyzeText("Cat dog.\nApple bee.", "ca");
+            const r = row(out, "Letter occurrences by keyword:");
+            return { passed: r === "Letter occurrences by keyword: 1 1 ", detail: JSON.stringify(r) };
+         }],
+
+         ["analyzeText — blank line counts as 0 words (fix #2)", () => {
+            const out = analyzeText("Cat dog.\n\nBee.", "ABC");
+            const r = row(out, "Words per line:");
+            return { passed: r === "Words per line: 2 0 1 ", detail: JSON.stringify(r) };
+         }],
+
+         ["analyzeText — empty keyword skips keyword section", () => {
+            const out = analyzeText(FIX, "");
+            const present = out.includes("First Letter index in Keyword:");
+            return { passed: !present, detail: present ? "keyword rows leaked" : "keyword section absent" };
+         }],
+
+         ["analyzeText — bundled default sample is a 2-line report", () => {
+            const sample =
+`The above posted coordinates N42 30\`000 W05 31\`000 are not where the cache is hidden, but you might enjoy the view. Instead can you solve this mystery to get the solution within a mile or two. It may cause you to try many ways to get the solution you are after. It is just up to you to make sure the right solution is found
+Cause then you know when the cache is. I rated the puzzle as a category 3 but it could be less. The solution can look hard at first. It may take you a bit of searching and you may get your eureka. Now where is that crazy puzzle, you might wonder. Well I can help you with that. The location is hidden with ascii. It may all become clear to you soon. Take a chair as it might involve a it of thinking. And the coordinates will appear like magic.`;
+            const out = analyzeText(sample, KW);
+            const hdr = out.split("\n")[0];
+            return { passed: hdr === "Number of lines: 2", detail: JSON.stringify(hdr) };
+         }],
+
+      ];
+
+      const results = tests.map(([name, fn]) => run(name, fn));
+
+      const tbody = document.getElementById("results");
+      let passed = 0;
+      results.forEach((r, i) => {
+         const tr = document.createElement("tr");
+         tr.className = r.passed ? "pass" : "fail";
+         tr.innerHTML =
+            `<td>${i + 1}</td>` +
+            `<td>${r.name}</td>` +
+            `<td>${r.passed ? "✓ PASS" : "✗ FAIL"}</td>` +
+            `<td class="detail">${r.detail || ""}</td>`;
+         tbody.appendChild(tr);
+         if (r.passed) passed++;
+      });
+
+      const summaryEl = document.getElementById("summary");
+      summaryEl.textContent = `${passed} / ${results.length} tests passed`;
+      summaryEl.className = "summary " + (passed === results.length ? "all-pass" : "has-fail");
+   </script>
+</body>
+</html>

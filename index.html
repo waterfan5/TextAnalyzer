@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Text Analyzer</title>
+   <link rel="icon" href="../Shared/favicon.ico" />
+
+   <!-- Shared theme + fonts -->
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Caveat+Brush&family=Inter:wght@400;500;600&display=swap">
+   <link rel="stylesheet" href="../Shared/theme.css" />
+   <link rel="stylesheet" href="textanalyzer.css" />
+
+   <!-- Hamburger nav + icon font -->
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+   <link rel="stylesheet" href="../Shared/hamburgermenu.css" />
+   <script type="text/javascript" src="../Shared/hamburgermenu.js"></script>
+
+   <!-- Google Analytics -->
+   <script async src="https://www.googletagmanager.com/gtag/js?id=G-1T547128ND"></script>
+
+   <!-- Core analysis logic (DOM-free, shared with test.html) -->
+   <script type="text/javascript" src="textanalyzer-logic.js"></script>
+
+   <script>
+      // Demo text shown when the user clicks "Sample" (input is empty by default).
+      const SAMPLE =
+`The above posted coordinates N42 30\`000 W05 31\`000 are not where the cache is hidden, but you might enjoy the view. Instead can you solve this mystery to get the solution within a mile or two. It may cause you to try many ways to get the solution you are after. It is just up to you to make sure the right solution is found
+Cause then you know when the cache is. I rated the puzzle as a category 3 but it could be less. The solution can look hard at first. It may take you a bit of searching and you may get your eureka. Now where is that crazy puzzle, you might wonder. Well I can help you with that. The location is hidden with ascii. It may all become clear to you soon. Take a chair as it might involve a it of thinking. And the coordinates will appear like magic.`;
+
+      function onSample() {
+         trackEvent("sample");
+         document.getElementById("txtInput").value = SAMPLE;
+         OnAction();
+      }
+
+      function OnSplit() {
+         trackEvent("split");
+         var inputTextItem = document.getElementById("txtInput");
+         inputTextItem.value = splitText(inputTextItem.value);
+      }
+
+      function OnAction() {
+         trackEvent("action");
+         var inputText = document.getElementById("txtInput").value;
+         var keyword = document.getElementById("txtKeyword").value;
+         document.getElementById("txtOutput").value = analyzeText(inputText, keyword);
+      }
+
+      function page_init() {
+         HamburgerMenu_Init();
+      }
+   </script>
+</head>
+
+<body class="nltm-page" onload="page_init()">
+
+   <!-- Top navigation / hamburger menu (DOM consumed by hamburgermenu.js) -->
+   <div class="topnav">
+      <div class="nltm-tool-header" id="FrameHeader">
+         <span class="nltm-tool-title">Text Analyzer</span>
+         <span class="nltm-tool-sub">Now Listen To Me Geocacher</span>
+      </div>
+      <!-- Navigation links (hidden by default) -->
+      <div id="myLinks"></div>
+      <!-- "Hamburger menu" / "Bar icon" to toggle the navigation links -->
+      <a href="javascript:void(0);" class="icon" onclick="HamburgerMenu_Open()">
+         <i class="fa fa-bars"></i>
+      </a>
+   </div>
+
+   <main class="ta-main">
+
+      <section class="nltm-card ta-card">
+         <h2 class="ta-heading">Input</h2>
+         <p class="ta-help">
+            Paste the text to analyze. <strong>Split</strong> reflows it so each sentence
+            (ending in <code>.</code> <code>?</code> <code>!</code>) sits on its own line;
+            <strong>Analyze</strong> reports per-line letter/word counts, first/last letters,
+            A–Z occurrence and index sweeps, and the keyword-driven breakdown.
+         </p>
+         <textarea id="txtInput" class="nltm-input ta-textarea" rows="8" placeholder="Paste text here, or click Sample to load a demo puzzle…"></textarea>
+         <div class="ta-controls">
+            <button class="nltm-button" onclick="OnAction()">Analyze</button>
+            <button class="nltm-button" onclick="OnSplit()">Split</button>
+            <button class="nltm-button ta-sample-btn" onclick="onSample()">Sample</button>
+            <label class="ta-keyword-label">Keyword:
+               <input type="text" id="txtKeyword" class="nltm-input ta-keyword" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ">
+            </label>
+         </div>
+      </section>
+
+      <section class="nltm-card ta-card">
+         <h2 class="ta-heading">Output</h2>
+         <textarea id="txtOutput" class="nltm-input ta-output" rows="15" readonly></textarea>
+      </section>
+
+   </main>
+</body>
+</html>
